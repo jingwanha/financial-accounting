@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(python3:*)",
+      "Bash(kill:*)",
+      "Bash(wc:*)",
+      "Bash(echo:*)",
+      "Bash(ls:*)",
+      "Bash(python:*)",
+      "Bash(curl -s \"https://data.sec.gov/submissions/CIK0001515540.json\")",
+      "Bash(curl -s \"https://data.sec.gov/submissions/CIK0000789019.json\")",
+      "Bash(curl -s \"https://data.sec.gov/submissions/CIK0001318605.json\")",
+      "WebFetch(domain:data.sec.gov)",
+      "WebFetch(domain:stockanalysis.com)",
+      "WebFetch(domain:www.macrotrends.net)",
+      "WebSearch",
+      "WebFetch(domain:www.sec.gov)",
+      "WebFetch(domain:last10k.com)",
+      "WebFetch(domain:companiesmarketcap.com)",
+      "WebFetch(domain:www.strategy.com)",
+      "WebFetch(domain:www.nasdaq.com)",
+      "WebFetch(domain:www.financecharts.com)",
+      "WebFetch(domain:ir.mara.com)",
+      "WebFetch(domain:www.globenewswire.com)",
+      "WebFetch(domain:mlq.ai)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)"
+    ]
+  }
+}
