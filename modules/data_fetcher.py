@@ -25,6 +25,7 @@ def fetch_btc_price_history(days: int = 1825) -> pd.DataFrame:
         df = yf.download("BTC-USD", period=period, progress=False, auto_adjust=True)
         if df.empty:
             raise ValueError("yfinance 빈 응답")
+        df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
         price_col = "Close"
         out = df[[price_col]].copy()
         out.columns = ["price"]
