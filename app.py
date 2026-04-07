@@ -9,9 +9,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from dotenv import load_dotenv
-
-load_dotenv()
 
 st.set_page_config(
     page_title="ASC 350-60 암호화폐 회계 대시보드",
