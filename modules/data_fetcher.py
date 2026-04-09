@@ -1,6 +1,7 @@
 """
 data_fetcher.py — BTC 가격(yfinance) + CoinGecko 현재가 + yfinance 주가 유틸
 """
+
 import requests
 import pandas as pd
 import numpy as np
@@ -12,6 +13,7 @@ _CG_HEADERS = {"Accept": "application/json"}
 
 # ── BTC 일별 가격 (yfinance, 무료 전체 이력) ──────────────────────────────────
 
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_btc_price_history(days: int = 1825) -> pd.DataFrame:
     """
@@ -21,6 +23,7 @@ def fetch_btc_price_history(days: int = 1825) -> pd.DataFrame:
     """
     try:
         import yfinance as yf
+
         period = "max" if days >= 1800 else ("2y" if days >= 700 else "1y")
         df = yf.download("BTC-USD", period=period, progress=False, auto_adjust=True)
         if df.empty:
@@ -56,12 +59,27 @@ def fetch_btc_current_price() -> float:
 def _btc_fallback() -> pd.DataFrame:
     """분기말 BTC 가격 하드코딩 (API 전체 실패 시 최후 수단)."""
     rows = [
-        ("2019-12-31", 7193), ("2020-03-31", 6424), ("2020-06-30", 9137),
-        ("2020-09-30", 10784), ("2020-12-31", 28990),
-        ("2021-03-31", 58726), ("2021-06-30", 35045), ("2021-09-30", 43791), ("2021-12-31", 46306),
-        ("2022-03-31", 44350), ("2022-06-30", 19784), ("2022-09-30", 19432), ("2022-12-31", 16547),
-        ("2023-03-31", 28478), ("2023-06-30", 30477), ("2023-09-30", 26969), ("2023-12-31", 42265),
-        ("2024-03-31", 71240), ("2024-06-30", 62678), ("2024-09-30", 63301), ("2024-12-31", 93429),
+        ("2019-12-31", 7193),
+        ("2020-03-31", 6424),
+        ("2020-06-30", 9137),
+        ("2020-09-30", 10784),
+        ("2020-12-31", 28990),
+        ("2021-03-31", 58726),
+        ("2021-06-30", 35045),
+        ("2021-09-30", 43791),
+        ("2021-12-31", 46306),
+        ("2022-03-31", 44350),
+        ("2022-06-30", 19784),
+        ("2022-09-30", 19432),
+        ("2022-12-31", 16547),
+        ("2023-03-31", 28478),
+        ("2023-06-30", 30477),
+        ("2023-09-30", 26969),
+        ("2023-12-31", 42265),
+        ("2024-03-31", 71240),
+        ("2024-06-30", 62678),
+        ("2024-09-30", 63301),
+        ("2024-12-31", 93429),
     ]
     df = pd.DataFrame(rows, columns=["date", "price"])
     df["date"] = pd.to_datetime(df["date"])
@@ -79,8 +97,10 @@ def get_quarter_end_price(df_prices: pd.DataFrame, date_str: str) -> float:
 
 # ── 대용량 일별 분석용 ──────────────────────────────────────────────────────────
 
-def compute_daily_eps_series(btc_df: pd.DataFrame, holdings: float,
-                              shares: float, cost_basis: float) -> pd.DataFrame:
+
+def compute_daily_eps_series(
+    btc_df: pd.DataFrame, holdings: float, shares: float, cost_basis: float
+) -> pd.DataFrame:
     """
     일별 BTC 가격으로 연속 EPS 시계열 계산.
     holdings: 현재 보유 BTC 수량
@@ -107,11 +127,13 @@ def compute_rolling_volatility(btc_df: pd.DataFrame, window: int = 30) -> pd.Dat
 
 # ── yfinance 주가 ──────────────────────────────────────────────────────────────
 
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_stock_history(ticker: str, period: str = "5y") -> pd.DataFrame:
     """주가 데이터 (MSTR, TSLA, COIN)."""
     try:
         import yfinance as yf
+
         df = yf.download(ticker, period=period, progress=False, auto_adjust=True)
         if df.empty:
             return pd.DataFrame()
