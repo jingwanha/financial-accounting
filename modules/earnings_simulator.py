@@ -324,7 +324,7 @@ def chart_eps_comparison(df: pd.DataFrame) -> go.Figure:
     return fig
 
 
-def chart_sensitivity(df: pd.DataFrame, btc_change_pct: float) -> go.Figure:
+def chart_sensitivity(df: pd.DataFrame, btc_change_pct: float, y_range: list | None = None) -> go.Figure:
     df_sim = apply_sensitivity(df, btc_change_pct)
 
     fig = go.Figure()
@@ -348,6 +348,7 @@ def chart_sensitivity(df: pd.DataFrame, btc_change_pct: float) -> go.Figure:
         paper_bgcolor="#0E1117",
         font_color="white",
         yaxis_title="EPS (USD)",
+        yaxis=dict(range=y_range) if y_range else {},
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
     fig.update_xaxes(tickangle=-45)

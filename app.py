@@ -155,7 +155,18 @@ with tab_b:
     st.markdown("#### 🎚️ Sensitivity 분석 — BTC 가격 변동 시 EPS 영향")
     btc_change_pct = st.slider("BTC 가격 변동률 (%)", -80, 200, 0, 5, key="b_sens")
     latest = holdings.iloc[-1]
-    sens_fig = chart_sensitivity(filtered, btc_change_pct)
+
+    # 슬라이더 전체 범위에서 가능한 EPS min/max를 미리 계산해 y축 고정
+    from modules.earnings_simulator import apply_sensitivity
+    all_eps_vals = []
+    for _pct in range(-80, 201, 5):
+        _df = apply_sensitivity(filtered, _pct)
+        all_eps_vals.extend(_df["sim_new_eps"].tolist())
+        all_eps_vals.extend(_df["old_eps"].tolist())
+    _pad = (max(all_eps_vals) - min(all_eps_vals)) * 0.05
+    sens_y_range = [min(all_eps_vals) - _pad, max(all_eps_vals) + _pad]
+
+    sens_fig = chart_sensitivity(filtered, btc_change_pct, y_range=sens_y_range)
     st.plotly_chart(sens_fig, use_container_width=True)
 
     # Volatility & Correlation
