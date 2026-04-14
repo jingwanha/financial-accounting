@@ -54,6 +54,7 @@ with st.sidebar:
 - ⚖️ 전후 비교 (핵심)
 - 🏢 멀티 기업 비교
 - 🔍 EDGAR NLP 분석
+- 📈 이벤트 연구
 - 💡 인사이트
 - ℹ️ 연구 배경
 """
@@ -64,12 +65,13 @@ with st.sidebar:
 # ══════════════════════════════════════════════════════════════════════════════
 # TABS
 # ══════════════════════════════════════════════════════════════════════════════
-tab_b, tab_compare, tab_multi, tab_c, tab_ai, tab_about = st.tabs(
+tab_b, tab_compare, tab_multi, tab_c, tab_event, tab_ai, tab_about = st.tabs(
     [
         "📊 EPS 시뮬레이터",
         "⚖️ 전후 비교 (핵심)",
         "🏢 멀티 기업 비교",
         "🔍 EDGAR NLP 분석",
+        "📈 이벤트 연구",
         "💡 인사이트",
         "ℹ️ 연구 배경",
     ]
@@ -433,6 +435,119 @@ with tab_c:
             ),
             use_container_width=True,
         )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TAB EVENT: 이벤트 연구
+# ══════════════════════════════════════════════════════════════════════════════
+with tab_event:
+    st.markdown(
+        '<div class="section-header"><h2>📈 이벤트 연구 — ASC 350-60 발표 주가 영향 분석</h2></div>',
+        unsafe_allow_html=True,
+    )
+
+    from modules.event_study import (
+        fetch_event_study_data,
+        compute_model_results,
+        chart_daily_returns,
+        chart_car,
+        chart_ar_bar,
+        chart_actual_vs_expected,
+        build_kpi_dict,
+        MODEL_CONFIGS,
+    )
+
+    st.info(
+        "**이벤트**: FASB ASC 350-60 가상자산 공정가치 회계 확정 발표 (2023-12-13)  |  "
+        "**대상**: MSTR 주식  |  **방법**: OLS 시장모형 기반 비정상 수익률(AR/CAR) 분석",
+        icon="📌",
+    )
+
+    with st.spinner("이벤트 연구 데이터 로딩 중 (yfinance)..."):
+        ev_returns = fetch_event_study_data()
+
+    if ev_returns is None or ev_returns.empty:
+        st.error("yfinance 데이터를 불러오지 못했습니다. 네트워크 연결을 확인하세요.")
+    else:
+        # ── 공통 차트: 일별 수익률 비교 ─────────────────────────────────────────
+        st.markdown("#### 📊 이벤트 윈도우 일별 수익률 비교 (MSTR vs BTC vs S&P 500)")
+        st.plotly_chart(chart_daily_returns(ev_returns), use_container_width=True)
+
+        st.divider()
+
+        # ── 모델별 서브탭 ─────────────────────────────────────────────────────────
+        ev_model_tabs = st.tabs([
+            "📉 S&P 500 시장모형",
+            "₿ 비트코인 벤치마크 모형",
+            "📊 다요인 모형 (S&P 500 + BTC)",
+        ])
+
+        for tab_widget, model_key in zip(ev_model_tabs, ["sp500", "btc", "multi"]):
+            with tab_widget:
+                cfg = MODEL_CONFIGS[model_key]
+                with st.spinner(f"{cfg['label']} 계산 중..."):
+                    results = compute_model_results(ev_returns, model_key)
+                kpi = build_kpi_dict(results)
+                n_beta = len(cfg["beta_labels"])
+
+                # ── KPI 행 1: 모델 파라미터 ──────────────────────────────────
+                param_cols = st.columns(2 + n_beta)
+                with param_cols[0]:
+                    st.metric("Alpha (일별)", kpi["alpha_pct"])
+                for i, (lbl, val) in enumerate(zip(kpi["beta_labels"], kpi["beta_values"])):
+                    with param_cols[1 + i]:
+                        st.metric(lbl, val)
+                with param_cols[1 + n_beta]:
+                    st.metric("R²", kpi["r_squared_pct"])
+
+                # ── KPI 행 2: 이벤트 당일 통계 ──────────────────────────────
+                stat_cols = st.columns(4)
+                with stat_cols[0]:
+                    st.metric("이벤트 당일 AR", kpi["ar_event_pct"])
+                with stat_cols[1]:
+                    st.metric("T-통계량", kpi["t_stat_str"])
+                with stat_cols[2]:
+                    st.metric("P-value", kpi["p_value_str"])
+                with stat_cols[3]:
+                    sig_icon = "🟢" if kpi["significant"] else "🔴"
+                    st.metric(
+                        "통계적 유의성 (p<0.05)",
+                        f"{sig_icon} {'유의' if kpi['significant'] else '비유의'}",
+                    )
+
+                # ── 차트 ─────────────────────────────────────────────────────
+                st.plotly_chart(
+                    chart_actual_vs_expected(results),
+                    use_container_width=True,
+                    key=f"ev_actual_exp_{model_key}",
+                )
+
+                col_car, col_ar = st.columns(2)
+                with col_car:
+                    st.plotly_chart(
+                        chart_car(results),
+                        use_container_width=True,
+                        key=f"ev_car_{model_key}",
+                    )
+                with col_ar:
+                    st.plotly_chart(
+                        chart_ar_bar(results),
+                        use_container_width=True,
+                        key=f"ev_ar_bar_{model_key}",
+                    )
+
+                # ── 결론 ─────────────────────────────────────────────────────
+                if kpi["significant"]:
+                    conclusion = (
+                        "**결론**: 95% 신뢰수준에서 통계적으로 유의미한 이상 수익률이 확인되었습니다. "
+                        "ASC 350-60 발표가 MSTR 주가에 의미 있는 충격을 미쳤다고 판단됩니다."
+                    )
+                else:
+                    conclusion = (
+                        "**결론**: 통계적으로 유의미한 이상 수익률이 발견되지 않았습니다. "
+                        "시장이 해당 발표를 이미 선반영했거나, BTC 가격 변동이 지배적 변수일 가능성이 있습니다."
+                    )
+                st.info(conclusion, icon="📋")
 
 
 # ── 인사이트 렌더러 ────────────────────────────────────────────────────────────
