@@ -18,26 +18,43 @@ _CG_HEADERS = {"Accept": "application/json"}
 def fetch_btc_price_history(days: int = 1825) -> pd.DataFrame:
     """
     yfinance로 BTC-USD 일별 종가 조회.
-    CoinGecko 무료 API는 365일로 제한되어 있어 yfinance 사용.
-    days 파라미터는 대략적 기간 힌트로만 사용.
+    yf.Ticker().history()를 우선 시도하고, 실패 시 yf.download로 재시도.
+    둘 다 실패하면 하드코딩 분기 데이터 사용.
     """
-    try:
-        import yfinance as yf
+    import yfinance as yf
 
-        period = "max" if days >= 1800 else ("2y" if days >= 700 else "1y")
-        df = yf.download("BTC-USD", period=period, progress=False, auto_adjust=True)
-        if df.empty:
-            raise ValueError("yfinance 빈 응답")
-        df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
-        price_col = "Close"
-        out = df[[price_col]].copy()
+    period = "max" if days >= 1800 else ("2y" if days >= 700 else "1y")
+
+    def _to_price_df(df: pd.DataFrame) -> pd.DataFrame:
+        """Close 컬럼 추출 → price 컬럼 + tz-naive DatetimeIndex 반환."""
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
+        out = df[["Close"]].copy()
         out.columns = ["price"]
-        out.index = pd.to_datetime(out.index).tz_localize(None).normalize()
-        out = out.dropna().sort_index()
-        return out
-    except Exception as e:
-        st.warning(f"yfinance BTC 조회 실패: {e}. 하드코딩 데이터로 대체합니다.")
-        return _btc_fallback()
+        if out.index.tz is not None:
+            out.index = out.index.tz_convert(None)
+        out.index = pd.to_datetime(out.index).normalize()
+        return out.dropna().sort_index()
+
+    # 1차 시도: yf.Ticker().history() — MultiIndex 없이 안정적
+    try:
+        df = yf.Ticker("BTC-USD").history(period=period)
+        if not df.empty:
+            return _to_price_df(df)
+    except Exception:
+        pass
+
+    # 2차 시도: yf.download
+    try:
+        df = yf.download("BTC-USD", period=period, progress=False, auto_adjust=True)
+        if not df.empty:
+            return _to_price_df(df)
+    except Exception:
+        pass
+
+    # 최후 수단: 하드코딩 분기 데이터
+    st.warning("yfinance BTC 조회 실패 — 하드코딩 분기 데이터로 대체합니다.")
+    return _btc_fallback()
 
 
 @st.cache_data(ttl=300, show_spinner=False)
@@ -80,6 +97,7 @@ def _btc_fallback() -> pd.DataFrame:
         ("2024-06-30", 62678),
         ("2024-09-30", 63301),
         ("2024-12-31", 93429),
+        ("2025-03-31", 82514),
     ]
     df = pd.DataFrame(rows, columns=["date", "price"])
     df["date"] = pd.to_datetime(df["date"])
