@@ -5,3 +5,5 @@ data/cache/
 .streamlit/secrets.toml
 .claude/
 group_project.pdf
+.DS_Store
+_workspace/
