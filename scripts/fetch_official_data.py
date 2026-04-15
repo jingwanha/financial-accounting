@@ -201,26 +201,31 @@ TSLA_FIN_FALLBACK = {
 }
 
 MARA_FIN_FALLBACK = {
-    "2021Q1": {"shares":  130000000, "net_income":    -13600000},
-    "2021Q2": {"shares":  140000000, "net_income":   -147000000},
-    "2021Q3": {"shares":  150000000, "net_income":    -24000000},
-    "2021Q4": {"shares":  160000000, "net_income":     59000000},
-    "2022Q1": {"shares":  175000000, "net_income":    -13000000},
-    "2022Q2": {"shares":  190000000, "net_income":   -192000000},
-    "2022Q3": {"shares":  210000000, "net_income":    -82000000},
-    "2022Q4": {"shares":  230000000, "net_income":   -687000000},
-    "2023Q1": {"shares":  245000000, "net_income":     43000000},
-    "2023Q2": {"shares":  260000000, "net_income":     16000000},
-    "2023Q3": {"shares":  270000000, "net_income":    -78000000},
-    "2023Q4": {"shares":  280000000, "net_income":    661000000},
-    "2024Q1": {"shares":  290000000, "net_income":    337000000},
-    "2024Q2": {"shares":  305000000, "net_income":   -199000000},
-    "2024Q3": {"shares":  320000000, "net_income":   -124000000},
-    "2024Q4": {"shares":  340000000, "net_income":    534000000},
-    "2025Q1": {"shares":  355000000, "net_income":   -533000000},
-    "2025Q2": {"shares":  370000000, "net_income":    890000000},
-    "2025Q3": {"shares":  385000000, "net_income":    420000000},
-    "2025Q4": {"shares":  400000000, "net_income":    680000000},
+    # net_income 2021~2023: ir.mara.com 실적발표 원문 직접 확인 (2026-04-15)
+    #   출처: https://ir.mara.com/news-events/press-releases/
+    #   참고: 2023년 10-K/A(2024-05-24) ASC 350-60 소급 재작성값과 다름 — 여기는 "As Reported(Original)" 사용
+    # shares: mara_holdings.csv 검증값 (yfinance 자동 수집, SEC 직접 검증 미수행)
+    "2021Q1": {"shares":   99370465, "net_income":     83356742},  # +$83.4M (BTC펀드 평가이익 $131.8M)
+    "2021Q2": {"shares":   99634123, "net_income":   -108884620},  # -$108.9M (BTC crash)
+    "2021Q3": {"shares":  102506558, "net_income":    -22172567},
+    "2021Q4": {"shares":  102733273, "net_income":     11525939},  # FY2021 합계 -$36.2M
+    "2022Q1": {"shares":  106051713, "net_income":    -12958589},
+    "2022Q2": {"shares":  113865235, "net_income":   -191646642},  # -$191.6M (BTC -56%)
+    "2022Q3": {"shares":  116810405, "net_income":    -75422407},
+    "2022Q4": {"shares":  145565916, "net_income":   -392726000},  # Q4 단독. FY2022 합계 -$686.7M
+    "2023Q1": {"shares":  167259602, "net_income":     -7235000},
+    "2023Q2": {"shares":  174209038, "net_income":    -19133000},
+    "2023Q3": {"shares":  210184718, "net_income":     64137000},  # +$64.1M
+    "2023Q4": {"shares":  242829391, "net_income":    151826000},  # Q4 단독. FY2023 합계 +$261.2M
+    # 2024~2025: CSV 검증값 (2024Q1~2025Q4 is_actual_asc360=False/True)
+    "2024Q1": {"shares":  268944172, "net_income":     13453207},
+    "2024Q2": {"shares":  287046579, "net_income":     -2221646},
+    "2024Q3": {"shares":  304912746, "net_income":     -3413326},
+    "2024Q4": {"shares":  340258453, "net_income":    528528000},
+    "2025Q1": {"shares":  346279403, "net_income":     -2192980},
+    "2025Q2": {"shares":  362337906, "net_income":     -2152459},
+    "2025Q3": {"shares":  378601057, "net_income":        26806},
+    "2025Q4": {"shares":  379464892, "net_income":  -1709376000},
 }
 
 
