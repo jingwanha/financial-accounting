@@ -149,8 +149,8 @@ with tab_b:
         btc_now = fetch_btc_current_price()
         st.metric("현재 BTC 가격", f"${btc_now:,.0f}" if btc_now else "N/A")
 
-    st.plotly_chart(chart_eps_comparison(filtered), use_container_width=True)
-    st.plotly_chart(chart_fv_gain_loss(filtered), use_container_width=True)
+    st.plotly_chart(chart_eps_comparison(filtered), width='stretch')
+    st.plotly_chart(chart_fv_gain_loss(filtered), width='stretch')
 
     # Sensitivity
     st.divider()
@@ -169,20 +169,20 @@ with tab_b:
     sens_y_range = [min(all_eps_vals) - _pad, max(all_eps_vals) + _pad]
 
     sens_fig = chart_sensitivity(filtered, btc_change_pct, y_range=sens_y_range)
-    st.plotly_chart(sens_fig, use_container_width=True)
+    st.plotly_chart(sens_fig, width='stretch')
 
     # Volatility & Correlation
     st.divider()
     st.markdown("#### 📉 BTC 가격 변동성 분석 (일별 데이터 기반)")
     vol_fig = chart_volatility(btc_prices)
     if vol_fig:
-        st.plotly_chart(vol_fig, use_container_width=True)
+        st.plotly_chart(vol_fig, width='stretch')
 
     st.markdown("#### 🔗 BTC-MSTR 주가 상관관계")
     mstr_hist = fetch_stock_history("MSTR")
     corr_fig = chart_btc_stock_correlation(btc_prices, mstr_hist)
     if corr_fig:
-        st.plotly_chart(corr_fig, use_container_width=True)
+        st.plotly_chart(corr_fig, width='stretch')
 
     # 테이블
     st.divider()
@@ -222,7 +222,7 @@ with tab_b:
                 "EPS 차이": "${:+.2f}",
             }
         ),
-        use_container_width=True,
+        width='stretch',
     )
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -266,11 +266,11 @@ with tab_compare:
             ratio2 = post["new_eps"].std() / post["old_eps"].std()
             st.metric("실제 EPS 변동성 비율", f"{ratio2:.2f}x")
 
-    st.plotly_chart(chart_pre_post_comparison(eps_df), use_container_width=True)
-    st.plotly_chart(chart_eps_volatility_comparison(eps_df), use_container_width=True)
+    st.plotly_chart(chart_pre_post_comparison(eps_df), width='stretch')
+    st.plotly_chart(chart_eps_volatility_comparison(eps_df), width='stretch')
 
     if not post.empty:
-        st.plotly_chart(chart_simulation_accuracy(eps_df), use_container_width=True)
+        st.plotly_chart(chart_simulation_accuracy(eps_df), width='stretch')
     else:
         st.info(
             "2025년 실제 ASC 350-60 적용 데이터가 충분히 축적되면 시뮬레이션 정확도 차트가 표시됩니다."
@@ -310,7 +310,7 @@ with tab_compare:
                 "분기말 BTC": "${:,.0f}",
             }
         ),
-        use_container_width=True,
+        width='stretch',
     )
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -345,19 +345,19 @@ with tab_multi:
 
     stats_df = summary_stats(all_eps)
     st.markdown("#### 📊 핵심 통계 요약")
-    st.dataframe(stats_df, use_container_width=True)
+    st.dataframe(stats_df, width='stretch')
 
     col_l, col_r = st.columns(2)
     with col_l:
         st.plotly_chart(
-            chart_btc_holdings_comparison(all_holdings), use_container_width=True
+            chart_btc_holdings_comparison(all_holdings), width='stretch'
         )
     with col_r:
-        st.plotly_chart(chart_eps_std_bar(all_eps), use_container_width=True)
+        st.plotly_chart(chart_eps_std_bar(all_eps), width='stretch')
 
-    st.plotly_chart(chart_eps_delta_comparison(all_eps), use_container_width=True)
-    st.plotly_chart(chart_eps_volatility_panel(all_eps), use_container_width=True)
-    st.plotly_chart(chart_fv_impact_heatmap(all_eps), use_container_width=True)
+    st.plotly_chart(chart_eps_delta_comparison(all_eps), width='stretch')
+    st.plotly_chart(chart_eps_volatility_panel(all_eps), width='stretch')
+    st.plotly_chart(chart_fv_impact_heatmap(all_eps), width='stretch')
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB C: EDGAR NLP
@@ -398,11 +398,11 @@ with tab_c:
             st.metric("최근 연도 감성 점수", f"{last.get('sentiment_compound', 0):.3f}")
 
         st.plotly_chart(
-            chart_keyword_heatmap(nlp_df, nlp_ticker), use_container_width=True
+            chart_keyword_heatmap(nlp_df, nlp_ticker), width='stretch'
         )
-        st.plotly_chart(chart_sentiment(nlp_df, nlp_ticker), use_container_width=True)
+        st.plotly_chart(chart_sentiment(nlp_df, nlp_ticker), width='stretch')
         st.plotly_chart(
-            chart_disclosure_length(nlp_df, nlp_ticker), use_container_width=True
+            chart_disclosure_length(nlp_df, nlp_ticker), width='stretch'
         )
 
         st.divider()
@@ -433,7 +433,7 @@ with tab_c:
                     "section_length": "섹션 길이(자)",
                 }
             ),
-            use_container_width=True,
+            width='stretch',
         )
 
 
@@ -471,7 +471,7 @@ with tab_event:
     else:
         # ── 공통 차트: 일별 수익률 비교 ─────────────────────────────────────────
         st.markdown("#### 📊 이벤트 윈도우 일별 수익률 비교 (MSTR vs BTC vs S&P 500)")
-        st.plotly_chart(chart_daily_returns(ev_returns), use_container_width=True)
+        st.plotly_chart(chart_daily_returns(ev_returns), width='stretch')
 
         st.divider()
 
@@ -518,7 +518,7 @@ with tab_event:
                 # ── 차트 ─────────────────────────────────────────────────────
                 st.plotly_chart(
                     chart_actual_vs_expected(results),
-                    use_container_width=True,
+                    width='stretch',
                     key=f"ev_actual_exp_{model_key}",
                 )
 
@@ -526,13 +526,13 @@ with tab_event:
                 with col_car:
                     st.plotly_chart(
                         chart_car(results),
-                        use_container_width=True,
+                        width='stretch',
                         key=f"ev_car_{model_key}",
                     )
                 with col_ar:
                     st.plotly_chart(
                         chart_ar_bar(results),
-                        use_container_width=True,
+                        width='stretch',
                         key=f"ev_ar_bar_{model_key}",
                     )
 
@@ -693,12 +693,12 @@ with tab_ai:
         with col_l:
             st.plotly_chart(
                 chart_eps_comparison(_eps_i),
-                use_container_width=True,
+                width='stretch',
                 key="ins_eps_cmp",
             )
         with col_r:
             st.plotly_chart(
-                chart_fv_gain_loss(_eps_i), use_container_width=True, key="ins_eps_fv"
+                chart_fv_gain_loss(_eps_i), width='stretch', key="ins_eps_fv"
             )
 
         st.divider()
@@ -716,23 +716,23 @@ with tab_ai:
         with col_l:
             st.plotly_chart(
                 chart_eps_std_bar(_all_e_i),
-                use_container_width=True,
+                width='stretch',
                 key="ins_multi_std",
             )
         with col_r:
             st.plotly_chart(
                 chart_btc_holdings_comparison(_all_h_i),
-                use_container_width=True,
+                width='stretch',
                 key="ins_multi_holdings",
             )
         st.plotly_chart(
             chart_eps_delta_comparison(_all_e_i),
-            use_container_width=True,
+            width='stretch',
             key="ins_multi_delta",
         )
         st.plotly_chart(
             chart_fv_impact_heatmap(_all_e_i),
-            use_container_width=True,
+            width='stretch',
             key="ins_multi_heatmap",
         )
 
@@ -777,13 +777,13 @@ with tab_ai:
             with col_l:
                 st.plotly_chart(
                     _chart_kh_i(_nlp_df_i, _nlp_tick_i),
-                    use_container_width=True,
+                    width='stretch',
                     key="ins_nlp_heatmap",
                 )
             with col_r:
                 st.plotly_chart(
                     _chart_cs_i(_nlp_df_i, _nlp_tick_i),
-                    use_container_width=True,
+                    width='stretch',
                     key="ins_nlp_sentiment",
                 )
 
@@ -791,13 +791,13 @@ with tab_ai:
             with col_l2:
                 st.plotly_chart(
                     _chart_dl_i(_nlp_df_i, _nlp_tick_i),
-                    use_container_width=True,
+                    width='stretch',
                     key="ins_nlp_length",
                 )
             with col_r2:
                 st.plotly_chart(
                     _chart_lm_i(_nlp_df_i, _nlp_tick_i),
-                    use_container_width=True,
+                    width='stretch',
                     key="ins_nlp_lm",
                 )
 
@@ -818,19 +818,19 @@ with tab_ai:
         with col_l:
             st.plotly_chart(
                 chart_pre_post_comparison(_eps_r),
-                use_container_width=True,
+                width='stretch',
                 key="ins_full_prepost",
             )
         with col_r:
             st.plotly_chart(
                 chart_eps_volatility_comparison(_eps_r),
-                use_container_width=True,
+                width='stretch',
                 key="ins_full_vol",
             )
 
         st.plotly_chart(
             chart_eps_delta_comparison(_all_e_r),
-            use_container_width=True,
+            width='stretch',
             key="ins_full_delta",
         )
 

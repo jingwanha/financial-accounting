@@ -327,31 +327,67 @@ def chart_eps_comparison(df: pd.DataFrame) -> go.Figure:
 def chart_sensitivity(df: pd.DataFrame, btc_change_pct: float, y_range: list | None = None) -> go.Figure:
     df_sim = apply_sensitivity(df, btc_change_pct)
 
-    fig = go.Figure()
+    # BTC 주당가치 = 분기말 BTC 시가총액 / 발행주식수
+    # EPS 민감도의 핵심 드라이버: ΔEPS per 1% = BTC주당가치 / 100
+    df_sim["btc_value_per_share"] = (
+        df_sim["btc_price_end"] * df_sim["btc_holdings"] / df_sim["shares_outstanding"]
+    )
+
+    fig = make_subplots(
+        rows=2, cols=1,
+        subplot_titles=(
+            f"민감도 분석: BTC 가격 {btc_change_pct:+.0f}% 변동 시 EPS",
+            "BTC 주당가치 (EPS 민감도 드라이버 — BTC가 1% 변할 때 ΔEPS = 아래값 ÷ 100)",
+        ),
+        vertical_spacing=0.16,
+        row_heights=[0.62, 0.38],
+    )
+
+    # ── Row 1: EPS ──
     fig.add_trace(go.Scatter(
         x=df_sim["quarter"], y=df_sim["old_eps"],
         name="구 기준 EPS",
         line=dict(color="#6EA8D0", dash="dash"),
         mode="lines+markers",
-    ))
+        marker=dict(size=6),
+    ), row=1, col=1)
     fig.add_trace(go.Scatter(
         x=df_sim["quarter"], y=df_sim["sim_new_eps"],
         name=f"ASC 350-60 EPS (BTC {btc_change_pct:+.0f}%)",
         line=dict(color="#F4845F"),
         mode="lines+markers",
-    ))
-    fig.add_hline(y=0, line_dash="dot", line_color="gray")
+        marker=dict(size=6),
+    ), row=1, col=1)
+    fig.add_hline(y=0, line_dash="dot", line_color="gray", row=1, col=1)
+
+    # ── Row 2: BTC 주당가치 ──
+    colors_btv = [
+        "#F7931A" if is_actual else "rgba(247,147,26,0.45)"
+        for is_actual in df_sim["is_actual_asc360"]
+    ]
+    fig.add_trace(go.Bar(
+        x=df_sim["quarter"],
+        y=df_sim["btc_value_per_share"],
+        name="BTC 주당가치 (USD/주)",
+        marker_color=colors_btv,
+        text=[f"${v:,.0f}" for v in df_sim["btc_value_per_share"]],
+        textposition="outside",
+        textfont=dict(size=9),
+        showlegend=True,
+    ), row=2, col=1)
+
     fig.update_layout(
-        title=f"민감도 분석: BTC 가격 {btc_change_pct:+.0f}% 변동 시 EPS",
-        height=380,
+        height=560,
         plot_bgcolor="#0E1117",
         paper_bgcolor="#0E1117",
         font_color="white",
-        yaxis_title="EPS (USD)",
-        yaxis=dict(range=y_range) if y_range else {},
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(t=80),
     )
     fig.update_xaxes(tickangle=-45)
+    fig.update_yaxes(title_text="EPS (USD)", row=1, col=1,
+                     **({"range": y_range} if y_range else {}))
+    fig.update_yaxes(title_text="USD / 주", row=2, col=1)
     return fig
 
 
