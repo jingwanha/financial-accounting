@@ -52,8 +52,31 @@ def fetch_btc_price_history(days: int = 1825) -> pd.DataFrame:
     except Exception:
         pass
 
+    # 3차 시도: CoinGecko (무료 365일) + 하드코딩 과거 데이터 병합
+    try:
+        resp = requests.get(
+            f"{COINGECKO_BASE}/coins/bitcoin/market_chart",
+            params={"vs_currency": "usd", "days": "365", "interval": "daily"},
+            headers=_CG_HEADERS,
+            timeout=15,
+        )
+        if resp.status_code == 200:
+            prices = resp.json()["prices"]
+            cg_df = pd.DataFrame(prices, columns=["ts", "price"])
+            cg_df["date"] = pd.to_datetime(cg_df["ts"], unit="ms").dt.normalize()
+            cg_df = cg_df.set_index("date")[["price"]].sort_index()
+            if not cg_df.empty:
+                hist = _btc_fallback()
+                merged = pd.concat(
+                    [hist[~hist.index.isin(cg_df.index)], cg_df]
+                ).sort_index()
+                merged = merged[~merged.index.duplicated(keep="last")]
+                return merged
+    except Exception:
+        pass
+
     # 최후 수단: 하드코딩 분기 데이터
-    st.warning("yfinance BTC 조회 실패 — 하드코딩 분기 데이터로 대체합니다.")
+    st.warning("BTC 가격 조회 실패 (yfinance·CoinGecko 모두 불가) — 하드코딩 분기 데이터로 대체합니다.")
     return _btc_fallback()
 
 
