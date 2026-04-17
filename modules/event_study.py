@@ -1,5 +1,6 @@
 """
-event_study.py — 이벤트 연구: ASC 350-60 발표(2023-12-13)의 MSTR 주가 영향
+event_study.py — 이벤트 연구: ASC 350-60 발표(2023-12-13)의 주가 영향
+대상: MSTR, Block(SQ)
 세 가지 벤치마크 모델: (1) S&P 500  (2) BTC  (3) S&P 500 + BTC 다요인
 
 의존성: numpy, pandas, plotly, streamlit, yfinance (statsmodels/scipy 불필요)
@@ -17,6 +18,19 @@ import streamlit as st
 # ══════════════════════════════════════════════════════════════════════════════
 
 EVENT_DATE = pd.Timestamp("2023-12-13")
+
+TICKER_INFO = {
+    "MSTR": {
+        "label": "MicroStrategy (MSTR)",
+        "color": "#6EA8D0",
+        "description": "BTC 대규모 보유 기업. ASC 350-60 영향이 가장 큼.",
+    },
+    "SQ": {
+        "label": "Block (SQ/XYZ)",
+        "color": "#00D632",
+        "description": "핀테크 기업. BTC 보유 비중 ~1.6%. FY2023 조기 적용.",
+    },
+}
 
 MODEL_CONFIGS = {
     "sp500": {
@@ -59,16 +73,16 @@ MODEL_CONFIGS = {
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_event_study_data() -> pd.DataFrame:
     """
-    MSTR, BTC-USD, ^GSPC의 일별 종가를 yfinance로 다운로드하고
+    MSTR, SQ, BTC-USD, ^GSPC의 일별 종가를 yfinance로 다운로드하고
     일별 수익률 DataFrame을 반환한다.
-    columns: ["MSTR", "BTC-USD", "^GSPC"]
+    columns: ["MSTR", "SQ", "BTC-USD", "^GSPC"]
     index: DatetimeIndex (tz-naive)
     """
     try:
         import yfinance as yf
 
         raw = yf.download(
-            ["MSTR", "BTC-USD", "^GSPC"],
+            ["MSTR", "SQ", "BTC-USD", "^GSPC"],
             start="2023-05-01",
             end="2024-03-01",
             progress=False,
@@ -84,7 +98,7 @@ def fetch_event_study_data() -> pd.DataFrame:
         close.columns = [c if isinstance(c, str) else c[0] for c in close.columns]
 
         # 필요한 컬럼만 선택
-        needed = ["MSTR", "BTC-USD", "^GSPC"]
+        needed = ["MSTR", "SQ", "BTC-USD", "^GSPC"]
         close = close[[c for c in needed if c in close.columns]]
 
         # 인덱스 tz 제거
@@ -143,6 +157,7 @@ def _ols_fit(
 def compute_model_results(
     returns: pd.DataFrame,
     model_key: str,
+    ticker: str = "MSTR",
     est_start: str = None,
     est_end: str = None,
     win_start: str = None,
@@ -150,11 +165,12 @@ def compute_model_results(
 ) -> dict:
     """
     하나의 모델(sp500 / btc / multi)에 대해 추정 및 이벤트 윈도우 분석을 수행한다.
+    ticker: 분석 대상 종목 (예: "MSTR", "SQ")
     반환 dict 키:
         alpha, betas, r_squared, sigma_resid,
         event_window (DataFrame: actual/expected/AR/CAR/T_stat/P_value),
         ar_event_day, t_stat_event, p_value_event,
-        model_label, model_color, n_est_obs
+        model_label, model_color, n_est_obs, ticker
     """
     cfg = MODEL_CONFIGS[model_key]
     factors = cfg["factors"]
@@ -165,21 +181,21 @@ def compute_model_results(
     win_e = win_end or cfg["win_end"]
 
     # 추정 기간 OLS
-    est_data = returns.loc[est_s:est_e].dropna(subset=["MSTR"] + factors)
+    est_data = returns.loc[est_s:est_e].dropna(subset=[ticker] + factors)
     X_est = est_data[factors].values
-    y_est = est_data["MSTR"].values
+    y_est = est_data[ticker].values
 
     alpha, betas, r_squared, sigma_resid = _ols_fit(X_est, y_est)
 
     # 이벤트 윈도우
-    win_data = returns.loc[win_s:win_e].dropna(subset=["MSTR"] + factors).copy()
+    win_data = returns.loc[win_s:win_e].dropna(subset=[ticker] + factors).copy()
 
     # 기대 수익률: alpha + sum(beta_i * factor_i)
     expected = np.full(len(win_data), alpha)
     for beta, factor in zip(betas, factors):
         expected += beta * win_data[factor].values
 
-    win_data["actual"] = win_data["MSTR"].values
+    win_data["actual"] = win_data[ticker].values
     win_data["expected"] = expected
     win_data["AR"] = win_data["actual"] - win_data["expected"]
     win_data["CAR"] = win_data["AR"].cumsum()
@@ -209,6 +225,8 @@ def compute_model_results(
                 p_event = float(row["P_value"])
                 break
 
+    ticker_info = TICKER_INFO.get(ticker, {"label": ticker, "color": "#6EA8D0"})
+
     return {
         "alpha": alpha,
         "betas": betas,
@@ -223,6 +241,9 @@ def compute_model_results(
         "model_color": cfg["color"],
         "n_est_obs": len(est_data),
         "factors": factors,
+        "ticker": ticker,
+        "ticker_label": ticker_info["label"],
+        "ticker_color": ticker_info["color"],
     }
 
 
@@ -302,22 +323,23 @@ def _add_event_line(fig, xref="x", yref="paper", show_label=True):
         )
 
 
-def chart_daily_returns(returns: pd.DataFrame) -> go.Figure:
+def chart_daily_returns(returns: pd.DataFrame, ticker: str = "MSTR") -> go.Figure:
     """
-    이벤트 윈도우(2023-11-13 ~ 2024-02-13) 내 MSTR / BTC / S&P 500
+    이벤트 윈도우(2023-11-13 ~ 2024-02-13) 내 대상 종목 / BTC / S&P 500
     일별 수익률 비교 라인 차트.
     """
     win = returns.loc["2023-11-13":"2024-02-13"]
+    ti = TICKER_INFO.get(ticker, {"label": ticker, "color": "#6EA8D0"})
 
     fig = go.Figure()
 
-    if "MSTR" in win.columns:
+    if ticker in win.columns:
         fig.add_trace(
             go.Scatter(
                 x=win.index,
-                y=win["MSTR"],
-                name="MSTR",
-                line=dict(color="#6EA8D0", width=2),
+                y=win[ticker],
+                name=ti["label"],
+                line=dict(color=ti["color"], width=2),
             )
         )
     if "BTC-USD" in win.columns:
@@ -346,7 +368,7 @@ def chart_daily_returns(returns: pd.DataFrame) -> go.Figure:
 
     fig.update_layout(
         **_DARK_LAYOUT,
-        title="일별 수익률 비교: MSTR vs BTC vs S&P 500",
+        title=f"일별 수익률 비교: {ti['label']} vs BTC vs S&P 500",
         yaxis=dict(tickformat=".1%", title="일별 수익률"),
         xaxis_title="날짜",
         legend=dict(orientation="h", y=1.08),
@@ -375,12 +397,14 @@ def chart_actual_vs_expected(results: dict) -> go.Figure:
     )
 
     # 상단: 실제 vs 기대
+    ticker = results.get("ticker", "MSTR")
+    ti = TICKER_INFO.get(ticker, {"label": ticker, "color": "#6EA8D0"})
     fig.add_trace(
         go.Scatter(
             x=df.index,
             y=df["actual"],
-            name="실제 (MSTR)",
-            line=dict(color="#6EA8D0", width=2),
+            name=f"실제 ({ti['label']})",
+            line=dict(color=ti["color"], width=2),
         ),
         row=1,
         col=1,

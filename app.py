@@ -455,23 +455,38 @@ with tab_event:
         chart_actual_vs_expected,
         build_kpi_dict,
         MODEL_CONFIGS,
+        TICKER_INFO,
     )
 
-    st.info(
-        "**이벤트**: FASB ASC 350-60 가상자산 공정가치 회계 확정 발표 (2023-12-13)  |  "
-        "**대상**: MSTR 주식  |  **방법**: OLS 시장모형 기반 비정상 수익률(AR/CAR) 분석",
-        icon="📌",
-    )
+    # ── 기업 선택 ─────────────────────────────────────────────────────────────
+    ev_col_sel, ev_col_desc = st.columns([1, 3])
+    with ev_col_sel:
+        ev_ticker = st.selectbox(
+            "분석 대상 기업",
+            options=list(TICKER_INFO.keys()),
+            format_func=lambda t: TICKER_INFO[t]["label"],
+            key="ev_ticker_select",
+        )
+    with ev_col_desc:
+        ti = TICKER_INFO[ev_ticker]
+        st.info(
+            f"**이벤트**: FASB ASC 350-60 확정 발표 (2023-12-13)  |  "
+            f"**대상**: {ti['label']}  |  **방법**: OLS 시장모형 AR/CAR 분석  \n"
+            f"_{ti['description']}_",
+            icon="📌",
+        )
 
     with st.spinner("이벤트 연구 데이터 로딩 중 (yfinance)..."):
         ev_returns = fetch_event_study_data()
 
     if ev_returns is None or ev_returns.empty:
         st.error("yfinance 데이터를 불러오지 못했습니다. 네트워크 연결을 확인하세요.")
+    elif ev_ticker not in ev_returns.columns:
+        st.error(f"{ev_ticker} 주가 데이터를 불러오지 못했습니다.")
     else:
         # ── 공통 차트: 일별 수익률 비교 ─────────────────────────────────────────
-        st.markdown("#### 📊 이벤트 윈도우 일별 수익률 비교 (MSTR vs BTC vs S&P 500)")
-        st.plotly_chart(chart_daily_returns(ev_returns), width='stretch')
+        st.markdown(f"#### 📊 이벤트 윈도우 일별 수익률 비교 ({ti['label']} vs BTC vs S&P 500)")
+        st.plotly_chart(chart_daily_returns(ev_returns, ticker=ev_ticker), width='stretch')
 
         st.divider()
 
@@ -486,7 +501,7 @@ with tab_event:
             with tab_widget:
                 cfg = MODEL_CONFIGS[model_key]
                 with st.spinner(f"{cfg['label']} 계산 중..."):
-                    results = compute_model_results(ev_returns, model_key)
+                    results = compute_model_results(ev_returns, model_key, ticker=ev_ticker)
                 kpi = build_kpi_dict(results)
                 n_beta = len(cfg["beta_labels"])
 
@@ -519,7 +534,7 @@ with tab_event:
                 st.plotly_chart(
                     chart_actual_vs_expected(results),
                     width='stretch',
-                    key=f"ev_actual_exp_{model_key}",
+                    key=f"ev_actual_exp_{model_key}_{ev_ticker}",
                 )
 
                 col_car, col_ar = st.columns(2)
@@ -527,25 +542,25 @@ with tab_event:
                     st.plotly_chart(
                         chart_car(results),
                         width='stretch',
-                        key=f"ev_car_{model_key}",
+                        key=f"ev_car_{model_key}_{ev_ticker}",
                     )
                 with col_ar:
                     st.plotly_chart(
                         chart_ar_bar(results),
                         width='stretch',
-                        key=f"ev_ar_bar_{model_key}",
+                        key=f"ev_ar_bar_{model_key}_{ev_ticker}",
                     )
 
                 # ── 결론 ─────────────────────────────────────────────────────
                 if kpi["significant"]:
                     conclusion = (
-                        "**결론**: 95% 신뢰수준에서 통계적으로 유의미한 이상 수익률이 확인되었습니다. "
-                        "ASC 350-60 발표가 MSTR 주가에 의미 있는 충격을 미쳤다고 판단됩니다."
+                        f"**결론**: 95% 신뢰수준에서 통계적으로 유의미한 이상 수익률이 확인되었습니다. "
+                        f"ASC 350-60 발표가 {ti['label']} 주가에 의미 있는 충격을 미쳤다고 판단됩니다."
                     )
                 else:
                     conclusion = (
-                        "**결론**: 통계적으로 유의미한 이상 수익률이 발견되지 않았습니다. "
-                        "시장이 해당 발표를 이미 선반영했거나, BTC 가격 변동이 지배적 변수일 가능성이 있습니다."
+                        f"**결론**: 통계적으로 유의미한 이상 수익률이 발견되지 않았습니다. "
+                        f"시장이 해당 발표를 이미 선반영했거나, BTC 가격 변동이 지배적 변수일 가능성이 있습니다."
                     )
                 st.info(conclusion, icon="📋")
 
