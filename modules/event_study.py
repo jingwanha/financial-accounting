@@ -25,8 +25,8 @@ TICKER_INFO = {
         "color": "#6EA8D0",
         "description": "BTC 대규모 보유 기업. ASC 350-60 영향이 가장 큼.",
     },
-    "SQ": {
-        "label": "Block (SQ/XYZ)",
+    "XYZ": {
+        "label": "Block (XYZ)",
         "color": "#00D632",
         "description": "핀테크 기업. BTC 보유 비중 ~1.6%. FY2023 조기 적용.",
     },
@@ -73,16 +73,16 @@ MODEL_CONFIGS = {
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_event_study_data() -> pd.DataFrame:
     """
-    MSTR, SQ, BTC-USD, ^GSPC의 일별 종가를 yfinance로 다운로드하고
+    MSTR, XYZ(Block), BTC-USD, ^GSPC의 일별 종가를 yfinance로 다운로드하고
     일별 수익률 DataFrame을 반환한다.
-    columns: ["MSTR", "SQ", "BTC-USD", "^GSPC"]
+    columns: ["MSTR", "XYZ", "BTC-USD", "^GSPC"]
     index: DatetimeIndex (tz-naive)
     """
     try:
         import yfinance as yf
 
         raw = yf.download(
-            ["MSTR", "SQ", "BTC-USD", "^GSPC"],
+            ["MSTR", "XYZ", "BTC-USD", "^GSPC"],
             start="2023-05-01",
             end="2024-03-01",
             progress=False,
@@ -98,7 +98,7 @@ def fetch_event_study_data() -> pd.DataFrame:
         close.columns = [c if isinstance(c, str) else c[0] for c in close.columns]
 
         # 필요한 컬럼만 선택
-        needed = ["MSTR", "SQ", "BTC-USD", "^GSPC"]
+        needed = ["MSTR", "XYZ", "BTC-USD", "^GSPC"]
         close = close[[c for c in needed if c in close.columns]]
 
         # 인덱스 tz 제거
