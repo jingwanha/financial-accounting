@@ -96,23 +96,28 @@ def chart_eps_delta_comparison(all_eps: pd.DataFrame) -> go.Figure:
 
 
 def chart_eps_volatility_panel(all_eps: pd.DataFrame) -> go.Figure:
-    """3개 기업 × 2개 기준 EPS 변동성 비교 박스플롯."""
+    """3개 기업 × 2개 기준 EPS 변동성 비교 Scatter."""
     fig = go.Figure()
     for ticker in ["MSTR", "TSLA", "MARA"]:
         df = all_eps[all_eps["ticker"] == ticker]
         meta = COMPANY_META[ticker]
-        fig.add_trace(go.Box(
-            y=df["old_eps"], name=f"{ticker}<br>구 기준",
-            marker_color=meta["color"], opacity=0.5, boxmean=True,
-            legendgroup=ticker,
+        fig.add_trace(go.Scatter(
+            name=f"{ticker}<br>구 기준"
+            , x = df['date']
+            , y = df['old_eps']
+            , line = dict(color = meta['color'])
+            , opacity = 0.5
+            , mode = 'lines + markers'
         ))
-        fig.add_trace(go.Box(
-            y=df["new_eps"], name=f"{ticker}<br>ASC 350-60",
-            marker_color=meta["color"], boxmean=True,
-            legendgroup=ticker,
+        fig.add_trace(go.Scatter(
+            name=f"{ticker}<br>ASC 350-60"
+            , x = df['date']
+            , y = df['new_eps']
+            , marker = dict(color = meta['color'])
+            , mode = 'lines + markers'
         ))
     fig.update_layout(
-        title="기업별 EPS 분포 비교 (구 기준 vs ASC 350-60)",
+        title="기업별 EPS 변동성 비교 (구 기준 vs ASC 350-60)",
         height=420,
         plot_bgcolor="#0E1117", paper_bgcolor="#0E1117",
         font_color="white", yaxis_title="EPS (USD)",
